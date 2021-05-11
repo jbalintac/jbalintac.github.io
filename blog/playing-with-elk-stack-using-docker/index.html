@@ -2,7 +2,6 @@
 <html lang="en-US">
 
 <head>
-	<meta name="generator" content="Hugo 0.47.1" />
 <meta charset="utf-8">
 <meta name="HandheldFriendly" content="True">
 <meta name="MobileOptimized" content="320">
@@ -14,24 +13,24 @@
 <meta property="og:site_name" content="nyzme" />
 <meta property="og:locale" content="nn_NO" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://nyzme.com/" />
-<meta property="og:title" content="nyzme" />
-<meta property="twitter:title" content="nyzme">
+<meta property="og:url" content="https://nyzme.com/blog/playing-with-elk-stack-using-docker/" />
+<meta property="og:title" content="Playing with ELK stack using Docker" />
+<meta property="twitter:title" content="Playing with ELK stack using Docker">
 
     <meta property="og:image" content="https://nyzme.com/img/banner.png">
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:image" content="https://nyzme.com/img/banner.png">
 
-<meta property="og:description" content="My personal blog">
-<meta property="twitter:description" content="My personal blog">
+<meta property="og:description" content="">
+<meta property="twitter:description" content="">
 
 <title>
 
 
-    nyzme
+     nyzme - Playing with ELK stack using Docker 
 
 </title>
-<link rel="canonical" href="https://nyzme.com/">
+<link rel="canonical" href="https://nyzme.com/blog/playing-with-elk-stack-using-docker/">
 
 
 <style media="screen">
@@ -1063,8 +1062,6 @@ margin-left: -4%;
 
 
 
-  <link href="https://nyzme.com/index.xml" rel="alternate" type="application/rss+xml" title="nyzme" />
-
 
 </head>
 
@@ -1072,7 +1069,7 @@ margin-left: -4%;
 <body>
 
 
-<div class="header header-home column">
+<div class="header column">
 
     <div class="container">
         
@@ -1111,25 +1108,214 @@ margin-left: -4%;
     </div>
 </div>
 
-<div class="main column">
+
+
+
+
+<div class="main post non-narrow zero-top-spacing column">
     <div class="container">
         <div class="content">
-            
-                <div class="markdown">
-                <p><em>A personal site for web presence, because why not?</em></p>
+            <div class="front-matter">
+                <div class="title-container">
+                    <div class="page-heading">
+
+    
+    Playing with ELK stack using Docker
+    
+
+</div>
 
                 </div>
-            
-
-            
-
-            <div class="best-posts">
-            
-            
+                <div class="meta">
+                    <div class="date" title="Tue Oct 30 2018 00:00:00 UTC">Oct 30, 2018</div>
+                    
+                        
+                    
+                    <div class="reading-time middot">2 minute read</div>
+                    <div class="tags">
+                        <ul>
+                          
+                            <li class="middot"><a href="https://nyzme.com/tags/elk">ELK</a> </li>
+                          
+                            <li class="middot"><a href="https://nyzme.com/tags/docker">Docker</a> </li>
+                          
+                            <li class="middot"><a href="https://nyzme.com/tags/elasticsearch">Elasticsearch</a> </li>
+                          
+                            <li class="middot"><a href="https://nyzme.com/tags/kibana">Kibana</a> </li>
+                          
+                        </ul>
+                    </div>
+                    <div class="tags">
+                        <ul>
+                          
+                          
+                        </ul>
+                    </div>
+                </div>
             </div>
+            <div class="markdown">
+                
+    
+    
+
+<h2 id="the-goal">The Goal</h2>
+
+<p>In here I just want to test how quick it is to setup ELK stack for an application by utilizing Docker.</p>
+
+<p>Given the current landspace of Development we are now on the stage that every developer should be utilizing the containerization benefits on their projects.</p>
+
+<h2 id="a-quick-testing-of-elasticsearch-and-kibana-locally">A Quick testing of Elasticsearch and Kibana locally</h2>
+
+<p>Elasticsearch and Kibana should be on the same network, here we used one for both and exposes the port. Checking on our <code>localhost:5601</code> should show us our running Kibana connected to our Elasticsearch.</p>
+
+<pre><code class="language-bash">docker network create elastic
+docker run --name elasticsearch --network=elastic -p 9200:9200 -p 9300:9300 -e &quot;discovery.type=single-node&quot; docker.elastic.co/elasticsearch/elasticsearch:6.4.2 
+docker run --network=elastic -p 5601:5601 docker.elastic.co/kibana/kibana:6.4.2
+</code></pre>
+
+<h2 id="creating-a-net-core-web-api">Creating a .Net Core Web API</h2>
+
+<p>The following command should create a web api that will log an event to our Elasticsearch. We will use Serilog for logging.</p>
+
+<pre><code class="language-bash">dotnet new webapi
+
+dotnet add package Serilog
+dotnet add package Serilog.Extensions.Logging
+dotnet add package Serilog.Sinks.ElasticSearch
+dotnet restore
+</code></pre>
+
+<h3 id="setting-up-serilog">Setting up Serilog</h3>
+
+<p><strong>On StartUp</strong></p>
+
+<pre><code class="language-csharp">public Startup(IConfiguration configuration)
+{
+    // Create Serilog Elasticsearch logger
+    Log.Logger = new LoggerConfiguration()
+        .Enrich.FromLogContext()
+        .MinimumLevel.Debug()
+        .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri(&quot;http://localhost:9200&quot;))
+        {
+            MinimumLogEventLevel = LogEventLevel.Verbose,
+            AutoRegisterTemplate = true
+        })
+        .CreateLogger();
+
+    Configuration = configuration;
+}
+</code></pre>
+
+<p><strong>On Configure</strong></p>
+
+<pre><code class="language-csharp">public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+{
+    // Set Serilog
+    loggerFactory.AddConsole(Configuration.GetSection(&quot;Logging&quot;));
+    loggerFactory.AddDebug();
+
+    if (env.IsDevelopment())
+    {
+        app.UseDeveloperExceptionPage();
+    }
+    else
+    {
+        app.UseHsts();
+    }
+
+    app.UseHttpsRedirection();
+    app.UseMvc();
+}
+</code></pre>
+
+<p><strong>Logging an Event</strong></p>
+
+<pre><code class="language-csharp">Log.Information(&quot;Something eventful happen here!&quot;);
+</code></pre>
+
+<p><strong>The Dockerfile</strong></p>
+
+<pre><code class="language-docker">FROM microsoft/dotnet:sdk AS build-env
+WORKDIR /app    
+
+# Copy csproj and restore as distinct layers
+COPY *.csproj ./
+RUN dotnet restore
+
+# Copy everything else and build
+COPY . ./
+RUN dotnet publish -c Release -o out
+
+# Build runtime image
+FROM microsoft/dotnet:aspnetcore-runtime
+WORKDIR /app
+COPY --from=build-env /app/out .
+ENTRYPOINT [&quot;dotnet&quot;, &quot;aspnet.elk.sample.dll&quot;]
+</code></pre>
+
+<h2 id="creating-our-docker-compose">Creating our docker-compose</h2>
+
+<p>Here the <em>app</em> should be our webapi image push in a repository. I set the memory for the Elasticsearch to be lower than the default 1GB for deploying to resource constraint testing environment which is the purpose of this play around too. By running a <code>docker-compose up -d</code> against our docker-compose.yml, this can be deploy to any docker enabled machine quickly and at ease.</p>
+
+<p><strong>Our docker-compose.yml</strong></p>
+
+<pre><code class="language-yaml">version: '2.1'
+
+services:
+  elasticsearch:
+    restart: always
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.4.2
+    environment:
+      - &quot;ES_JAVA_OPTS=-Xms512m -Xmx512m&quot;
+      - &quot;discovery.type=single-node&quot;
+    ports:
+      - 9200:9200
+
+  kibana:
+    restart: always
+    image: docker.elastic.co/kibana/kibana:6.4.2
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
+
+  app:
+    restart: always
+    image: jbalintac/cdc-demo
+    ports:
+      - 5050:80
+    depends_on:
+      - elasticsearch
+      - kibana
+</code></pre>
+
+
+            </div>
+            
+            
+            <br>
+            <div class="navigation">
+                
+                <div>
+                    <img class="icon" src="https://nyzme.com/img/back.svg" alt="back" />
+                    <a href="https://nyzme.com/blog/the-hunt-for-the-cheapest-infrastructure/">The hunt for the cheapest infrastructure</a>
+                </div>
+                
+                <div style="width: 100%;"></div>
+                
+            </div>
+            
+            
+
+            
+
+            
         </div>
     </div>
 </div>
+
+
+
 <div class="footer column">
     <div class="container">
 

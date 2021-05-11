@@ -2,7 +2,6 @@
 <html lang="en-US">
 
 <head>
-	<meta name="generator" content="Hugo 0.47.1" />
 <meta charset="utf-8">
 <meta name="HandheldFriendly" content="True">
 <meta name="MobileOptimized" content="320">
@@ -14,24 +13,24 @@
 <meta property="og:site_name" content="nyzme" />
 <meta property="og:locale" content="nn_NO" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://nyzme.com/" />
-<meta property="og:title" content="nyzme" />
-<meta property="twitter:title" content="nyzme">
+<meta property="og:url" content="https://nyzme.com/blog/the-hunt-for-the-cheapest-infrastructure/" />
+<meta property="og:title" content="The hunt for the cheapest infrastructure" />
+<meta property="twitter:title" content="The hunt for the cheapest infrastructure">
 
     <meta property="og:image" content="https://nyzme.com/img/banner.png">
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:image" content="https://nyzme.com/img/banner.png">
 
-<meta property="og:description" content="My personal blog">
-<meta property="twitter:description" content="My personal blog">
+<meta property="og:description" content="">
+<meta property="twitter:description" content="">
 
 <title>
 
 
-    nyzme
+     nyzme - The hunt for the cheapest infrastructure 
 
 </title>
-<link rel="canonical" href="https://nyzme.com/">
+<link rel="canonical" href="https://nyzme.com/blog/the-hunt-for-the-cheapest-infrastructure/">
 
 
 <style media="screen">
@@ -1063,8 +1062,6 @@ margin-left: -4%;
 
 
 
-  <link href="https://nyzme.com/index.xml" rel="alternate" type="application/rss+xml" title="nyzme" />
-
 
 </head>
 
@@ -1072,7 +1069,7 @@ margin-left: -4%;
 <body>
 
 
-<div class="header header-home column">
+<div class="header column">
 
     <div class="container">
         
@@ -1111,25 +1108,264 @@ margin-left: -4%;
     </div>
 </div>
 
-<div class="main column">
+
+
+
+
+<div class="main post non-narrow zero-top-spacing column">
     <div class="container">
         <div class="content">
-            
-                <div class="markdown">
-                <p><em>A personal site for web presence, because why not?</em></p>
+            <div class="front-matter">
+                <div class="title-container">
+                    <div class="page-heading">
+
+    
+    The hunt for the cheapest infrastructure
+    
+
+</div>
 
                 </div>
-            
-
-            
-
-            <div class="best-posts">
-            
-            
+                <div class="meta">
+                    <div class="date" title="Thu Oct 4 2018 00:00:00 UTC">Oct 4, 2018</div>
+                    
+                        
+                    
+                    <div class="reading-time middot">3 minute read</div>
+                    <div class="tags">
+                        <ul>
+                          
+                            <li class="middot"><a href="https://nyzme.com/tags/vps">VPS</a> </li>
+                          
+                            <li class="middot"><a href="https://nyzme.com/tags/docker">Docker</a> </li>
+                          
+                            <li class="middot"><a href="https://nyzme.com/tags/lightsail">Lightsail</a> </li>
+                          
+                        </ul>
+                    </div>
+                    <div class="tags">
+                        <ul>
+                          
+                          
+                        </ul>
+                    </div>
+                </div>
             </div>
+            <div class="markdown">
+                
+    
+    
+
+<h2 id="the-goal">The Goal</h2>
+
+<p>The main requirement is it need be to <em>cheap</em>.</p>
+
+<p>It also need to be a general purpose infrastracture that can be utilize by a varities of roles, and of course to make it fair with negligible traffic and hardware load.
+Server capabilities should be open enough for customization to serve as a database, backend, to frontend server on any platform and language as needed.</p>
+
+<h2 id="the-cheapest-vps">The cheapest VPS</h2>
+
+<p>Following are the considered options are:</p>
+
+<ul>
+<li><p>Z.com
+&gt; Priced at $1.00 for a webhosting however it has the typical cPanel controlled server which lacks customization and mostly offers PHP stack.</p></li>
+
+<li><p>Vultr VPS
+&gt; Offers $2.50 as the lowest however only available only for IPv6 and the one at $3.50 has 512MB memory, 20GB SSD, and 0.5TB transfer.</p></li>
+
+<li><p>DigitalOcean
+&gt; Offers $5.00 as the lowest with 1G memory, 25G SSD, and 1TB transfer.</p></li>
+
+<li><p>Amazon Lightsail
+&gt; Offers $3.50 as the lowest with 512MB memory, 20G SSD, and 1TB transfer.</p></li>
+</ul>
+
+<p>The offering of <em>Amazon Lightsail</em> is cheapest one in terms of value with a price of $3.50 and a hardware of 512MB memory, 20G SSD, and 1TB transfer.
+Lightsail and Vultr has a small margin of difference especially with its first trial free benefits on which Vultr offers an annual $40 allowance while Lightsail only offer one month free.</p>
+
+<p>Aside from the affordability ─ I have chosen Lightsail as an opportunity on starting with the AWS platform.</p>
+
+<h2 id="exploiting-docker-and-nginx-reverse-proxy">Exploiting Docker and Nginx Reverse Proxy</h2>
+
+<p>To futher utilize our VPS we can use it to server multiple domain or subdomain by using an reverse proxy to direct traffic to our subsystem on which we will host on a Docker Container on the same VPS.</p>
+
+<p>Having a Docker Container virtually makes our VPS a hypervisor for multiple VMs which we can further exploit for hosting low hardware requiring server setup.</p>
+
+<h3 id="setting-up-docker">Setting up Docker</h3>
+
+<p><strong>Installing docker and docker-compose</strong></p>
+
+<pre><code class="language-bash">$ curl -fsSL https://get.docker.com -o get-docker.sh
+$ sudo sh get-docker.sh
+$ sudo usermod -aG docker $USR
+</code></pre>
+
+<pre><code class="language-bash">$ sudo curl -L &quot;https://github.com/docker/compose/releases/download/1.22.0/docker-compose-$(uname -s)-$(uname -m)&quot; -o /usr/local/bin/docker-compose
+$ sudo chmod +x /usr/local/bin/docker-compose
+</code></pre>
+
+<h3 id="reverse-proxy-nginx-container">Reverse-proxy Nginx Container</h3>
+
+<p><strong>Our docker compose setup</strong></p>
+
+<pre><code class="language-yaml">version: '2'
+
+services:
+    public-server:
+        image: nginx:alpine
+        ports:
+            - 80:80            
+            - 443:443
+        volumes:
+            - ./volume/public-server/nginx/nginx.conf:/etc/nginx/nginx.conf
+            - ./volume/public-server/ssl/dhparam-2048.pem:/etc/ssl/certs/dhparam-2048.pem
+            - ./volume/public-server/ssl/nyzme.com/etc/letsencrypt/live/nyzme.com/fullchain.pem:/etc/letsencrypt/live/nyzme.com/fullchain.pem
+            - ./volume/public-server/ssl/nyzme.com/etc/letsencrypt/live/nyzme.com/privkey.pem:/etc/letsencrypt/live/nyzme.com/privkey.pem
+            - ./volume/public-server/nginx/letsencrypt:/data/letsencrypt
+        restart: always
+
+    nyzme-blog:
+        depends_on:
+            - public-server
+        image: nginx:alpine
+        volumes:
+            - ./volume/nyzme-blog/html:/usr/share/nginx/html
+        restart: always
+</code></pre>
+
+<h2 id="using-let-s-encrypts-free-ssl">Using Let&rsquo;s Encrypts free SSL</h2>
+
+<p>We can also get a free SSL for securing and complying to the internet HTTPS standard to our Reverse Proxy by using Let&rsquo;s Encrypt free SSL.</p>
+
+<h3 id="getting-our-ssl-keys">Getting our SSL keys</h3>
+
+<p><strong>Initial command to get our SSL keys</strong></p>
+
+<pre><code class="language-bash">docker run -it --rm \
+-v $PWD/volume/public-server/ssl/nyzme.com/etc/letsencrypt:/etc/letsencrypt \
+-v $PWD/volume/public-server/ssl/nyzme.com/var/lib/letsencrypt:/var/lib/letsencrypt \
+-v $PWD/volume/public-server/ssl/nyzme.com/var/log/letsencrypt:/var/log/letsencrypt \
+-v $PWD/volume/public-server/nginx/letsencrypt:/data/letsencrypt \
+certbot/certbot \
+certonly \
+--webroot \
+--webroot-path=/data/letsencrypt \
+--email &lt;email&gt;@outlook.com --agree-tos --no-eff-email \
+-d www.nyzme.com -d nyzme.com
+</code></pre>
+
+<p><strong>Generating our dhparam</strong></p>
+
+<pre><code class="language-bash">sudo openssl dhparam -out $PWD/volume/public-server/ssl/dhparam-2048.pem 2048
+</code></pre>
+
+<p><strong>nginx.conf for reverse proxy and https</strong></p>
+
+<pre><code>worker_processes 1;
+
+events { worker_connections 1024; }
+
+http {
+
+    sendfile on;
+
+    upstream docker-nginx {
+        server nyzme-blog:80;
+    }
+
+    server {
+        listen      80;
+        listen [::]:80;
+        server_name nyzme.com www.nyzme.com;
+
+        location / {
+            rewrite ^ https://$host$request_uri? permanent;
+        }
+
+        #for certbot challenges (renewal process)
+        location ~ /.well-known/acme-challenge {
+        
+            allow all;
+            root /data/letsencrypt;
+        }
+    }
+
+    # for https
+    server {
+        listen 443 ssl http2;
+        listen [::]:443 ssl http2;
+        server_name www.nyzme.com nyzme.com;
+
+        server_tokens off;
+
+        ssl_certificate /etc/letsencrypt/live/nyzme.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/nyzme.com/privkey.pem;
+
+        ssl_buffer_size 8k;
+
+        ssl_dhparam /etc/ssl/certs/dhparam-2048.pem;
+
+        ssl_protocols TLSv1.2 TLSv1.1 TLSv1;
+        ssl_prefer_server_ciphers on;
+    
+        ssl_ciphers ECDH+AESGCM:ECDH+AES256:ECDH+AES128:DH+3DES:!ADH:!AECDH:!MD5;
+
+        ssl_ecdh_curve secp384r1;
+        ssl_session_tickets off;   
+
+        # OCSP stapling
+        ssl_stapling on;
+        ssl_stapling_verify on;
+        resolver 8.8.8.8 8.8.4.4;
+
+        ssl on;
+
+        location / {
+            proxy_pass         http://docker-nginx;
+            proxy_redirect     off;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+            proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Host $server_name;
+        }
+    }
+}
+
+</code></pre>
+
+<h3 id="scheduled-renewal-of-ssl">Scheduled Renewal of SSL</h3>
+
+<pre><code>0 0 1 * * docker run --rm -it --name certbot -v /home/ubuntu/nyzme-docker/volume/public-server/ssl/www.nyzme.com/etc/letsencrypt:/etc/letsencrypt -v /home/ubuntu/nyzme-docker/volume/public-server/ssl/www.nyzme.com/var/lib/letsencrypt:/var/lib/letsencrypt -v /home/ubuntu/nyzme-docker/volume/public-server/ssl/www.nyzme.com/var/log/letsencrypt:/var/log/letsencrypt -v /home/ubuntu/nyzme-docker/volume/public-server/nginx/letsencrypt:/data/letsencrypt certbot/certbot renew --webroot -w /data/letsencrypt &amp;&amp; docker-compose -f /home/ubuntu/nyzme-docker/docker-compose.yml exec public-server nginx -s reload
+</code></pre>
+
+
+            </div>
+            
+            
+            <br>
+            <div class="navigation">
+                
+                <div style="width: 100%;"></div>
+                
+                <div>
+                    <a href="https://nyzme.com/blog/playing-with-elk-stack-using-docker/">Playing with ELK stack using Docker</a>
+                    <img class="icon" src="https://nyzme.com/img/next.svg" alt="next" />
+                </div>
+                
+            </div>
+            
+            
+
+            
+
+            
         </div>
     </div>
 </div>
+
+
+
 <div class="footer column">
     <div class="container">
 
